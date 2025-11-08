@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interactive Roses</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Arial', sans-serif;
+            touch-action: none;
+        }
+
+        #garden {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .rose-container {
+            width: 30%;
+            height: 30%;
+            min-width: 100px;
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: bloom 0.8s ease-out;
+        }
+
+        @keyframes bloom {
+            0% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.1) rotate(-10deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .rose {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            transition: filter 0.3s ease;
+        }
+
+        .petal {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            border-radius: 50% 50% 50% 0;
+            transform-origin: bottom left;
+        }
+
+        .petal1 { transform: translate(20px, -10px) rotate(45deg); }
+        .petal2 { transform: translate(35px, 5px) rotate(90deg); }
+        .petal3 { transform: translate(35px, 30px) rotate(135deg); }
+        .petal4 { transform: translate(20px, 45px) rotate(180deg); }
+        .petal5 { transform: translate(5px, 45px) rotate(225deg); }
+        .petal6 { transform: translate(-10px, 30px) rotate(270deg); }
+        .petal7 { transform: translate(-10px, 5px) rotate(315deg); }
+        .petal8 { transform: translate(5px, -10px) rotate(360deg); }
+
+        .center {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #8B4513;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .stem {
+            position: absolute;
+            width: 4px;
+            height: 40px;
+            background: linear-gradient(to bottom, #2d5016, #1a3009);
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        .leaf {
+            position: absolute;
+            width: 20px;
+            height: 12px;
+            background: #2d5016;
+            border-radius: 0 100% 0 100%;
+            bottom: -25px;
+        }
+
+        .leaf-left {
+            left: -15px;
+            transform: rotate(-30deg);
+        }
+
+        .leaf-right {
+            right: -15px;
+            transform: rotate(30deg) scaleX(-1);
+        }
+
+        #info {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        #count {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+
+        #instruction {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        #permission-btn {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            display: none;
+        }
+
+        #permission-btn:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <button id="permission-btn">Enable Sensors</button>
+
+    <div id="info">
+        <div id="count">Roses: 1/9</div>
+        <div id="instruction">Tilt to change color • Shake to bloom</div>
+    </div>
+
+    <div id="garden"></div>
+
+    <script>
+        const garden = document.getElementById('garden');
+        const countDisplay = document.getElementById('count');
+        const permissionBtn = document.getElementById('permission-btn');
+
+        let roses = [];
+        let maxRoses = 9;
+        let lastShake = 0;
+        let lastOrientation = { beta: 0, gamma: 0 };
+
+        // Color palette for roses
+        const colors = [
+            '#FF1744', // Red
+            '#FF6F00', // Orange
+            '#FFD600', // Yellow
+            '#E91E63', // Pink
+            '#9C27B0', // Purple
+            '#3F51B5', // Indigo
+            '#00BCD4', // Cyan
+            '#FF4081', // Hot Pink
+            '#FF5722'  // Deep Orange
+        ];
+
+        let usedColors = [];
+
+        function getRandomColor() {
+            const availableColors = colors.filter(c => !usedColors.includes(c));
+            if (availableColors.length === 0) return colors[0];
+            const color = availableColors[Math.floor(Math.random() * availableColors.length)];
+            usedColors.push(color);
+            return color;
+        }
+
+        function createRose(color) {
+            const container = document.createElement('div');
+            container.className = 'rose-container';
+
+            const rose = document.createElement('div');
+            rose.className = 'rose';
+
+            for (let i = 1; i <= 8; i++) {
+                const petal = document.createElement('div');
+                petal.className = `petal petal${i}`;
+                petal.style.background = color;
+                rose.appendChild(petal);
+            }
+
+            const center = document.createElement('div');
+            center.className = 'center';
+            rose.appendChild(center);
+
+            const stem = document.createElement('div');
+            stem.className = 'stem';
+            rose.appendChild(stem);
+
+            const leafLeft = document.createElement('div');
+            leafLeft.className = 'leaf leaf-left';
+            stem.appendChild(leafLeft);
+
+            const leafRight = document.createElement('div');
+            leafRight.className = 'leaf leaf-right';
+            stem.appendChild(leafRight);
+
+            container.appendChild(rose);
+            garden.appendChild(container);
+
+            return { container, rose, petals: rose.querySelectorAll('.petal'), baseColor: color };
+        }
+
+        function hslToColor(h, s, l) {
+            return `hsl(${h}, ${s}%, ${l}%)`;
+        }
+
+        function updateRoseColors(beta, gamma) {
+            roses.forEach((roseObj, index) => {
+                const hueShift = Math.floor((beta + 180) * 2) % 360;
+                const saturation = Math.min(100, Math.max(40, 70 + gamma / 2));
+                const lightness = Math.min(70, Math.max(30, 50 + beta / 4));
+
+                const baseHue = (index * 40 + hueShift) % 360;
+                const color = hslToColor(baseHue, saturation, lightness);
+
+                roseObj.petals.forEach(petal => {
+                    petal.style.background = color;
+                });
+            });
+        }
+
+        function handleOrientation(event) {
+            const beta = event.beta || 0;
+            const gamma = event.gamma || 0;
+
+            updateRoseColors(beta, gamma);
+            lastOrientation = { beta, gamma };
+        }
+
+        function handleMotion(event) {
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+
+            const magnitude = Math.sqrt(
+                acc.x * acc.x + 
+                acc.y * acc.y + 
+                acc.z * acc.z
+            );
+
+            const now = Date.now();
+            if (magnitude > 25 && now - lastShake > 500) {
+                lastShake = now;
+                addRose();
+            }
+        }
+
+        function addRose() {
+            if (roses.length >= maxRoses) return;
+
+            const color = getRandomColor();
+            const roseObj = createRose(color);
+            roses.push(roseObj);
+
+            countDisplay.textContent = `Roses: ${roses.length}/9`;
+
+            // Update colors based on current orientation
+            updateRoseColors(lastOrientation.beta, lastOrientation.gamma);
+        }
+
+        async function requestPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const orientationPermission = await DeviceOrientationEvent.requestPermission();
+                    const motionPermission = await DeviceMotionEvent.requestPermission();
+
+                    if (orientationPermission === 'granted' && motionPermission === 'granted') {
+                        startSensors();
+                    }
+                } catch (error) {
+                    console.error('Permission error:', error);
+                    alert('Please enable sensor permissions to use this app.');
+                }
+            } else {
+                startSensors();
+            }
+            permissionBtn.style.display = 'none';
+        }
+
+        function startSensors() {
+            window.addEventListener('deviceorientation', handleOrientation);
+            window.addEventListener('devicemotion', handleMotion);
+        }
+
+        // Initialize
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            permissionBtn.style.display = 'block';
+            permissionBtn.addEventListener('click', requestPermission);
+        } else {
+            startSensors();
+        }
+
+        // Create initial rose
+        addRose();
+    </script>
+</body>
+</html>
