@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactive Roses</title>
+    <title>Interactive Roses Bouquet</title>
     <style>
         * {
             margin: 0;
@@ -25,100 +25,115 @@
             height: 100%;
             position: relative;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-end;
             align-items: center;
-            padding: 20px;
+            padding-bottom: 40px;
+        }
+
+        .bouquet {
+            position: relative;
+            width: 280px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
         }
 
         .rose-container {
-            width: 30%;
-            height: 30%;
-            min-width: 100px;
-            min-height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: absolute;
+            width: 100px;
+            height: 200px;
             animation: bloom 0.8s ease-out;
         }
 
         @keyframes bloom {
             0% {
-                transform: scale(0) rotate(180deg);
+                transform: scale(0) translateY(50px);
                 opacity: 0;
             }
             60% {
-                transform: scale(1.1) rotate(-10deg);
+                transform: scale(1.1) translateY(-10px);
             }
             100% {
-                transform: scale(1) rotate(0deg);
+                transform: scale(1) translateY(0px);
                 opacity: 1;
             }
         }
 
-        .rose {
-            width: 80px;
-            height: 80px;
-            position: relative;
-            transition: filter 0.3s ease;
+        .stem-group {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .stem {
+            position: absolute;
+            width: 3px;
+            height: 120px;
+            background: linear-gradient(to bottom, #2d5016, #1a3009);
+            border-radius: 2px;
+            bottom: 0;
+        }
+
+        .leaf {
+            position: absolute;
+            width: 18px;
+            height: 10px;
+            background: #2d5016;
+            border-radius: 0 100% 0 100%;
+        }
+
+        .leaf-left {
+            left: -12px;
+            bottom: 60px;
+            transform: rotate(-35deg);
+        }
+
+        .leaf-right {
+            right: -12px;
+            bottom: 45px;
+            transform: rotate(35deg) scaleX(-1);
+        }
+
+        .rose-head {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            bottom: 120px;
         }
 
         .petal {
             position: absolute;
-            width: 40px;
-            height: 60px;
+            width: 35px;
+            height: 50px;
             border-radius: 50% 50% 50% 0;
-            transform-origin: bottom left;
+            transform-origin: bottom center;
         }
 
-        .petal1 { transform: translate(20px, -10px) rotate(45deg); }
-        .petal2 { transform: translate(35px, 5px) rotate(90deg); }
-        .petal3 { transform: translate(35px, 30px) rotate(135deg); }
-        .petal4 { transform: translate(20px, 45px) rotate(180deg); }
-        .petal5 { transform: translate(5px, 45px) rotate(225deg); }
-        .petal6 { transform: translate(-10px, 30px) rotate(270deg); }
-        .petal7 { transform: translate(-10px, 5px) rotate(315deg); }
-        .petal8 { transform: translate(5px, -10px) rotate(360deg); }
+        .petal1 { transform: translateX(17.5px) rotate(0deg); }
+        .petal2 { transform: translateX(17.5px) rotate(45deg); }
+        .petal3 { transform: translateX(17.5px) rotate(90deg); }
+        .petal4 { transform: translateX(17.5px) rotate(135deg); }
+        .petal5 { transform: translateX(17.5px) rotate(180deg); }
+        .petal6 { transform: translateX(17.5px) rotate(225deg); }
+        .petal7 { transform: translateX(17.5px) rotate(270deg); }
+        .petal8 { transform: translateX(17.5px) rotate(315deg); }
 
         .center {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             background: #8B4513;
             border-radius: 50%;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-        }
-
-        .stem {
-            position: absolute;
-            width: 4px;
-            height: 40px;
-            background: linear-gradient(to bottom, #2d5016, #1a3009);
-            bottom: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 2px;
-        }
-
-        .leaf {
-            position: absolute;
-            width: 20px;
-            height: 12px;
-            background: #2d5016;
-            border-radius: 0 100% 0 100%;
-            bottom: -25px;
-        }
-
-        .leaf-left {
-            left: -15px;
-            transform: rotate(-30deg);
-        }
-
-        .leaf-right {
-            right: -15px;
-            transform: rotate(30deg) scaleX(-1);
+            z-index: 10;
         }
 
         #info {
@@ -176,10 +191,12 @@
         <div id="instruction">Tilt to change color • Shake to bloom</div>
     </div>
 
-    <div id="garden"></div>
+    <div id="garden">
+        <div class="bouquet" id="bouquet"></div>
+    </div>
 
     <script>
-        const garden = document.getElementById('garden');
+        const bouquet = document.getElementById('bouquet');
         const countDisplay = document.getElementById('count');
         const permissionBtn = document.getElementById('permission-btn');
 
@@ -215,24 +232,31 @@
             const container = document.createElement('div');
             container.className = 'rose-container';
 
-            const rose = document.createElement('div');
-            rose.className = 'rose';
+            const stemGroup = document.createElement('div');
+            stemGroup.className = 'stem-group';
 
+            // Rose head
+            const roseHead = document.createElement('div');
+            roseHead.className = 'rose-head';
+
+            // Create petals
             for (let i = 1; i <= 8; i++) {
                 const petal = document.createElement('div');
                 petal.className = `petal petal${i}`;
                 petal.style.background = color;
-                rose.appendChild(petal);
+                roseHead.appendChild(petal);
             }
 
+            // Center of rose
             const center = document.createElement('div');
             center.className = 'center';
-            rose.appendChild(center);
+            roseHead.appendChild(center);
 
+            // Stem
             const stem = document.createElement('div');
             stem.className = 'stem';
-            rose.appendChild(stem);
 
+            // Leaves
             const leafLeft = document.createElement('div');
             leafLeft.className = 'leaf leaf-left';
             stem.appendChild(leafLeft);
@@ -241,10 +265,40 @@
             leafRight.className = 'leaf leaf-right';
             stem.appendChild(leafRight);
 
-            container.appendChild(rose);
-            garden.appendChild(container);
+            stemGroup.appendChild(roseHead);
+            stemGroup.appendChild(stem);
 
-            return { container, rose, petals: rose.querySelectorAll('.petal'), baseColor: color };
+            container.appendChild(stemGroup);
+
+            return { container, roseHead, petals: roseHead.querySelectorAll('.petal'), baseColor: color };
+        }
+
+        function positionRoses() {
+            const centerX = 50;
+            const centerY = 50;
+            const count = roses.length;
+
+            roses.forEach((roseObj, index) => {
+                let x, y;
+
+                if (count === 1) {
+                    x = centerX;
+                    y = centerY;
+                } else {
+                    const angle = (360 / count) * index;
+                    const radius = Math.min(60, 30 + count * 5);
+                    x = centerX + radius * Math.cos((angle * Math.PI) / 180);
+                    y = centerY + radius * Math.sin((angle * Math.PI) / 180);
+
+                    // Rotation based on position for natural bouquet look
+                    const rotation = angle - 90;
+                    roseObj.container.style.transform = `translate(${x - 50}%, ${y - 50}%) rotate(${rotation}deg)`;
+                }
+
+                if (count === 1) {
+                    roseObj.container.style.transform = `translate(0, 0)`;
+                }
+            });
         }
 
         function hslToColor(h, s, l) {
@@ -298,9 +352,10 @@
             const roseObj = createRose(color);
             roses.push(roseObj);
 
+            bouquet.appendChild(roseObj.container);
             countDisplay.textContent = `Roses: ${roses.length}/9`;
 
-            // Update colors based on current orientation
+            positionRoses();
             updateRoseColors(lastOrientation.beta, lastOrientation.gamma);
         }
 
